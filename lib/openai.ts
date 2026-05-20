@@ -1,8 +1,8 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getClient() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 export async function analyzeConversation(messages: any[]) {
   const prompt = `
@@ -19,7 +19,7 @@ Return JSON with:
 }
 `
 
-  const response = await openai.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'gpt-4-turbo-preview',
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
