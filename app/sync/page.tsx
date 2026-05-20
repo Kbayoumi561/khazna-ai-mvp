@@ -47,7 +47,7 @@ export default function SyncPage() {
       toast.success(`Synced ${data.count} of ${data.total} conversations`)
       fetchLogs()
     } else {
-      toast.error('Sync failed')
+      toast.error(`Sync failed: ${data.error || 'Unknown error'}`)
     }
 
     setLoading(false)
