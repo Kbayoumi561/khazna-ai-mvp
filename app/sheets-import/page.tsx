@@ -26,7 +26,8 @@ interface ValidationResult {
 interface ImportResult {
   success: boolean
   imported: number
-  skipped: number
+  skippedInvalid: number
+  skippedDuplicate: number
   total: number
   error?: string
 }
@@ -183,7 +184,7 @@ export default function SheetsImportPage() {
       setImportResult(data)
       setImportStatus(data.success ? 'success' : 'error')
     } catch {
-      setImportResult({ success: false, imported: 0, skipped: 0, total: 0, error: 'Network error' })
+      setImportResult({ success: false, imported: 0, skippedInvalid: 0, skippedDuplicate: 0, total: 0, error: 'Network error' })
       setImportStatus('error')
     }
   }
@@ -195,7 +196,8 @@ export default function SheetsImportPage() {
   }
 
   const canValidate = testStatus === 'success'
-  const canImport = validateStatus === 'success' && validation?.valid === true
+  // Allow import as long as at least one valid row exists — invalid rows will be skipped automatically
+  const canImport = validateStatus === 'success' && (validation?.validRows ?? 0) > 0
 
   return (
     <div className="max-w-2xl space-y-8 animate-fade-up">
@@ -364,6 +366,17 @@ export default function SheetsImportPage() {
                   <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(0, 78%, 62%)' }} />
                   <span className="text-xs" style={{ color: 'hsl(0, 78%, 62%)' }}>{validation.error}</span>
                 </div>
+              ) : validation.validRows > 0 ? (
+                <div
+                  className="flex items-start gap-2 px-3.5 py-2.5 rounded-md"
+                  style={{ background: 'hsl(38, 90%, 54%, 0.08)', border: '1px solid hsl(38, 90%, 54%, 0.2)' }}
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(38, 90%, 58%)' }} />
+                  <span className="text-xs" style={{ color: 'hsl(38, 90%, 64%)' }}>
+                    <span className="font-semibold">{validation.validRows} valid row{validation.validRows !== 1 ? 's' : ''} will be imported</span>
+                    {' '}— {validation.errors.length} row{validation.errors.length !== 1 ? 's' : ''} with errors will be skipped automatically.
+                  </span>
+                </div>
               ) : null}
 
               {/* Errors */}
@@ -387,7 +400,7 @@ export default function SheetsImportPage() {
           style={{
             background: 'hsl(222, 35%, 7%)',
             border: '1px solid hsl(220, 18%, 11%)',
-            opacity: canImport ? 1 : 0.45,
+            opacity: canImport ? 1 : 0.5,
           }}
         >
           <div className="flex items-start gap-4">
@@ -398,7 +411,7 @@ export default function SheetsImportPage() {
                 <h2 className="text-sm font-semibold text-foreground">Import Conversations</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                Write validated rows into the database. Duplicates are updated, not duplicated.
+                Imports valid rows and skips any rows with errors. Duplicates are updated, not re-inserted.
               </p>
             </div>
             <button
@@ -414,7 +427,12 @@ export default function SheetsImportPage() {
                 boxShadow: canImport ? '0 0 16px hsl(158, 64%, 48%, 0.2)' : undefined,
               }}
             >
-              {importStatus === 'loading' ? 'Importing…' : 'Import Now'}
+              {importStatus === 'loading'
+                ? 'Importing…'
+                : validation && !validation.valid
+                  ? `Import ${validation.validRows} Valid Rows`
+                  : 'Import Now'
+              }
             </button>
           </div>
 
@@ -434,10 +452,11 @@ export default function SheetsImportPage() {
                       Import complete
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     {[
                       { label: 'Imported', value: importResult.imported, icon: BarChart2, color: 'hsl(158, 64%, 48%)' },
-                      { label: 'Skipped', value: importResult.skipped, icon: SkipForward, color: 'hsl(38, 90%, 54%)' },
+                      { label: 'Skipped (errors)', value: importResult.skippedInvalid, icon: XCircle, color: 'hsl(0, 78%, 62%)' },
+                      { label: 'Skipped (dupes)', value: importResult.skippedDuplicate, icon: SkipForward, color: 'hsl(38, 90%, 54%)' },
                       { label: 'Total', value: importResult.total, icon: FileSpreadsheet, color: 'hsl(215, 12%, 65%)' },
                     ].map(({ label, value, icon: Icon, color }) => (
                       <div key={label} className="rounded px-3 py-2.5" style={{ background: 'hsl(158, 64%, 48%, 0.06)' }}>

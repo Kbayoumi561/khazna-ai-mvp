@@ -15,17 +15,29 @@ export async function POST() {
     // Read from Google Sheets
     const rows = await readConversations()
 
-    // Validate
+    // Validate — collect which row indices (0-based) have errors
     const validation = validateConversations(rows)
-    if (!validation.valid) {
+    const invalidRowIndices = new Set(
+      validation.errors.map((e) => e.row - 2) // row numbers are index+2
+    )
+
+    // Filter to only valid rows — skip rows with any error
+    const validRows = rows.filter((_, index) => !invalidRowIndices.has(index))
+    const skippedInvalid = rows.length - validRows.length
+
+    if (validRows.length === 0) {
       return NextResponse.json(
-        { error: 'Validation failed — fix errors before importing', validation },
+        {
+          success: false,
+          error: 'No valid rows to import — all rows have errors. Fix the data in your sheet and try again.',
+          validation,
+        },
         { status: 400 }
       )
     }
 
-    // Transform to DB format
-    const conversationsToInsert = rows.map((row) => ({
+    // Transform valid rows to DB format
+    const conversationsToInsert = validRows.map((row) => ({
       freshchat_conversation_id: row.conversation_id,
       customer_id: row.customer_id,
       agent_id: row.agent_id || null,
@@ -53,7 +65,7 @@ export async function POST() {
     }
 
     const importedCount = inserted?.length ?? 0
-    const skippedCount = rows.length - importedCount
+    const skippedDuplicate = validRows.length - importedCount
 
     // Log import
     await supabase.from('sync_logs').insert({
@@ -61,13 +73,14 @@ export async function POST() {
       sync_end: new Date(),
       sync_status: 'completed',
       total_conversations: rows.length,
-      failed_conversations: 0,
+      failed_conversations: skippedInvalid,
     })
 
     return NextResponse.json({
       success: true,
       imported: importedCount,
-      skipped: skippedCount,
+      skippedInvalid,
+      skippedDuplicate,
       total: rows.length,
     })
   } catch (error) {
