@@ -168,7 +168,7 @@ export default function SheetsImportPage() {
       const res = await fetch('/api/sheets/validate')
       const data: ValidationResult = await res.json()
       setValidation(data)
-      setValidateStatus(data.valid ? 'success' : 'error')
+      setValidateStatus((data.validRows ?? 0) > 0 ? 'success' : 'error')
     } catch {
       setValidation({ valid: false, error: 'Network error', errors: [], warnings: [], totalRows: 0, validRows: 0 })
       setValidateStatus('error')
