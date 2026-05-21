@@ -167,7 +167,7 @@ export default function SheetsImportPage() {
       const res = await fetch('/api/sheets/validate')
       const data: ValidationResult = await res.json()
       setValidation(data)
-      setValidateStatus(data.valid ? 'success' : 'error')
+      setValidateStatus('success') // Always success — validation is informational only
     } catch {
       setValidation({ valid: false, error: 'Network error', errors: [], warnings: [], totalRows: 0, validRows: 0 })
       setValidateStatus('error')
@@ -195,7 +195,7 @@ export default function SheetsImportPage() {
   }
 
   const canValidate = testStatus === 'success'
-  const canImport = validateStatus === 'success' && validation?.valid === true
+  const canImport = testStatus === 'success' // Import enabled after connection test; validation is optional
 
   return (
     <div className="max-w-2xl space-y-8 animate-fade-up">
@@ -311,7 +311,7 @@ export default function SheetsImportPage() {
                 <h2 className="text-sm font-semibold text-foreground">Validate Data</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                Check for missing required fields, invalid dates, and logical errors before importing
+                Preview data quality issues — optional, does not block import
               </p>
             </div>
             <button
@@ -353,7 +353,9 @@ export default function SheetsImportPage() {
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'hsl(158, 64%, 48%)' }} />
                   <span className="text-xs font-semibold" style={{ color: 'hsl(158, 64%, 55%)' }}>
-                    All data is valid — ready to import {validation.validRows} conversation{validation.validRows !== 1 ? 's' : ''}
+                    {validation.errors.length === 0
+                      ? `All data valid — ready to import ${validation.validRows} conversation${validation.validRows !== 1 ? 's' : ''}`
+                      : `${validation.validRows} of ${validation.totalRows} rows fully valid — import will proceed with defaults for the rest`}
                   </span>
                 </div>
               ) : validation.error ? (
@@ -398,7 +400,7 @@ export default function SheetsImportPage() {
                 <h2 className="text-sm font-semibold text-foreground">Import Conversations</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                Write validated rows into the database. Duplicates are updated, not duplicated.
+                Import all rows with a conversation_id. Missing fields use defaults. Duplicates are updated, not duplicated.
               </p>
             </div>
             <button

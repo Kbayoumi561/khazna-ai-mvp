@@ -24,52 +24,33 @@ export function validateConversations(rows: ConversationRow[]): ValidationResult
     const rowNum = index + 2 // +2 for 1-based + header row
     let rowValid = true
 
-    // Required fields
+    // Only truly skip rows with no conversation_id
     if (!row.conversation_id?.trim()) {
-      errors.push({ row: rowNum, field: 'conversation_id', error: 'Required field is missing', value: row.conversation_id })
+      errors.push({ row: rowNum, field: 'conversation_id', error: 'Missing — row will be skipped', value: row.conversation_id })
       rowValid = false
     }
 
+    // Everything else is a warning — import proceeds with defaults
     if (!row.customer_id?.trim()) {
-      errors.push({ row: rowNum, field: 'customer_id', error: 'Required field is missing', value: row.customer_id })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'customer_id', error: 'Missing — will use "unknown"', value: row.customer_id })
     }
 
     if (!row.status?.trim()) {
-      errors.push({ row: rowNum, field: 'status', error: 'Required field is missing', value: row.status })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'status', error: 'Missing — will import anyway', value: row.status })
     }
 
     if (!row.start_time?.trim()) {
-      errors.push({ row: rowNum, field: 'start_time', error: 'Required field is missing', value: row.start_time })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'start_time', error: 'Missing — will use current time', value: row.start_time })
     } else if (isNaN(Date.parse(row.start_time))) {
-      errors.push({ row: rowNum, field: 'start_time', error: 'Invalid date format — use ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)', value: row.start_time })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'start_time', error: 'Invalid date — will use current time', value: row.start_time })
     }
 
     if (!row.end_time?.trim()) {
-      errors.push({ row: rowNum, field: 'end_time', error: 'Required field is missing', value: row.end_time })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'end_time', error: 'Missing — will use current time', value: row.end_time })
     } else if (isNaN(Date.parse(row.end_time))) {
-      errors.push({ row: rowNum, field: 'end_time', error: 'Invalid date format — use ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)', value: row.end_time })
-      rowValid = false
+      warnings.push({ row: rowNum, field: 'end_time', error: 'Invalid date — will use current time', value: row.end_time })
     }
 
-    // Logical check: end must be after start
-    if (row.start_time && row.end_time && !isNaN(Date.parse(row.start_time)) && !isNaN(Date.parse(row.end_time))) {
-      if (new Date(row.end_time) < new Date(row.start_time)) {
-        errors.push({
-          row: rowNum,
-          field: 'end_time',
-          error: 'End time is before start time',
-          value: `${row.start_time} → ${row.end_time}`,
-        })
-        rowValid = false
-      }
-    }
-
-    // Optional field warnings
     if (!row.agent_id) {
       warnings.push({ row: rowNum, field: 'agent_id', error: 'Optional field missing', value: row.agent_id })
     }
@@ -81,7 +62,7 @@ export function validateConversations(rows: ConversationRow[]): ValidationResult
   })
 
   return {
-    valid: errors.length === 0,
+    valid: true, // Always true — validation is informational only
     errors,
     warnings,
     totalRows: rows.length,
