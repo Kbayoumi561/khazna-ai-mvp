@@ -196,8 +196,7 @@ export default function SheetsImportPage() {
   }
 
   const canValidate = testStatus === 'success'
-  // Allow import as long as at least one valid row exists — invalid rows will be skipped automatically
-  const canImport = validateStatus === 'success' && (validation?.totalRows ?? 0) > 0
+  const canImport = testStatus === 'success' // Validation is optional — import enabled after connection test
 
   return (
     <div className="max-w-2xl space-y-8 animate-fade-up">
@@ -411,7 +410,7 @@ export default function SheetsImportPage() {
                 <h2 className="text-sm font-semibold text-foreground">Import Conversations</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                Imports valid rows and skips any rows with errors. Duplicates are updated, not re-inserted.
+                Imports all rows from the sheet. Missing fields use defaults. Duplicates are updated, not re-inserted.
               </p>
             </div>
             <button
