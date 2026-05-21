@@ -1,69 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-border: hsl(215, 20%, 15%);
-  --color-input: hsl(215, 20%, 15%);
-  --color-ring: hsl(155, 60%, 50%);
-  --color-background: hsl(222, 47%, 5%);
-  --color-foreground: hsl(210, 40%, 98%);
+  --color-border: hsl(220, 18%, 13%);
+  --color-input: hsl(220, 18%, 12%);
+  --color-ring: hsl(158, 64%, 48%);
+  --color-background: hsl(224, 50%, 4%);
+  --color-foreground: hsl(210, 30%, 94%);
 
-  --color-card: hsl(222, 30%, 10%);
-  --color-card-foreground: hsl(210, 40%, 98%);
+  --color-card: hsl(222, 35%, 7%);
+  --color-card-foreground: hsl(210, 30%, 94%);
 
-  --color-primary: hsl(155, 60%, 50%);
-  --color-primary-foreground: hsl(222, 47%, 5%);
+  --color-primary: hsl(158, 64%, 48%);
+  --color-primary-foreground: hsl(224, 50%, 4%);
 
-  --color-secondary: hsl(215, 20%, 15%);
-  --color-secondary-foreground: hsl(210, 40%, 98%);
+  --color-secondary: hsl(220, 18%, 13%);
+  --color-secondary-foreground: hsl(210, 30%, 94%);
 
-  --color-muted: hsl(215, 20%, 20%);
-  --color-muted-foreground: hsl(215, 15%, 60%);
+  --color-muted: hsl(220, 18%, 16%);
+  --color-muted-foreground: hsl(215, 12%, 52%);
 
-  --color-accent: hsl(155, 60%, 50%);
-  --color-accent-foreground: hsl(222, 47%, 5%);
+  --color-accent: hsl(158, 64%, 48%);
+  --color-accent-foreground: hsl(224, 50%, 4%);
 
-  --color-destructive: hsl(0, 84%, 60%);
-  --color-destructive-foreground: hsl(210, 40%, 98%);
+  --color-destructive: hsl(0, 78%, 58%);
+  --color-destructive-foreground: hsl(210, 30%, 94%);
 
-  --color-success: hsl(142, 76%, 36%);
-  --color-warning: hsl(38, 92%, 50%);
-  --color-info: hsl(199, 89%, 48%);
+  --color-success: hsl(158, 64%, 48%);
+  --color-warning: hsl(38, 90%, 54%);
+  --color-info: hsl(199, 85%, 50%);
+  --color-gold: hsl(38, 90%, 54%);
 
-  --radius-lg: 0.75rem;
-  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-md: 0.4rem;
   --radius-sm: 0.25rem;
 
-  --font-sans: Inter, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --font-sans: 'Sora', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Sora', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(158, 64%, 48%, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, hsl(199, 85%, 50%, 0.04) 0%, transparent 50%);
+  }
+
+  /* Subtle dot grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, hsl(215, 20%, 20%, 0.5) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #__next, main {
+    position: relative;
+    z-index: 1;
   }
 }
 
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+/* ── scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: hsl(222, 35%, 6%); }
+::-webkit-scrollbar-thumb { background: hsl(220, 18%, 20%); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(158, 64%, 48%, 0.6); }
+
+/* ── data number display ── */
+.font-data {
+  font-family: 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-::-webkit-scrollbar-track {
-  background: hsl(222, 30%, 8%);
+/* ── glow utilities ── */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(158, 64%, 48%, 0.15), 0 0 40px hsl(158, 64%, 48%, 0.06);
 }
 
-::-webkit-scrollbar-thumb {
-  background: hsl(215, 15%, 30%);
-  border-radius: 3px;
+.glow-primary-strong {
+  box-shadow: 0 0 30px hsl(158, 64%, 48%, 0.25), 0 0 60px hsl(158, 64%, 48%, 0.08);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(155, 60%, 50%);
+/* ── shimmer animation for loading states ── */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(220, 18%, 13%) 25%,
+    hsl(220, 18%, 18%) 50%,
+    hsl(220, 18%, 13%) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* ── fade-in animations ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease both;
+}
+
+.animate-fade-up-delay-1 { animation: fade-up 0.4s 0.06s ease both; }
+.animate-fade-up-delay-2 { animation: fade-up 0.4s 0.12s ease both; }
+.animate-fade-up-delay-3 { animation: fade-up 0.4s 0.18s ease both; }
+.animate-fade-up-delay-4 { animation: fade-up 0.4s 0.24s ease both; }
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── card hover lift ── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-1px);
+  border-color: hsl(158, 64%, 48%, 0.3);
+  box-shadow: 0 4px 24px hsl(158, 64%, 48%, 0.08);
+}
+
+/* ── step connector lines ── */
+.step-connector {
+  position: relative;
+}
+
+.step-connector::before {
+  content: '';
+  position: absolute;
+  left: 1.125rem;
+  top: 2.5rem;
+  bottom: -1rem;
+  width: 1px;
+  background: linear-gradient(to bottom, hsl(158, 64%, 48%, 0.3), transparent);
 }
