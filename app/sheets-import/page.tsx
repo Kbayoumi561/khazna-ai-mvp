@@ -168,7 +168,7 @@ export default function SheetsImportPage() {
       const res = await fetch('/api/sheets/validate')
       const data: ValidationResult = await res.json()
       setValidation(data)
-      setValidateStatus((data.validRows ?? 0) > 0 ? 'success' : 'error')
+      setValidateStatus(data.totalRows > 0 ? 'success' : 'error')
     } catch {
       setValidation({ valid: false, error: 'Network error', errors: [], warnings: [], totalRows: 0, validRows: 0 })
       setValidateStatus('error')
@@ -197,7 +197,7 @@ export default function SheetsImportPage() {
 
   const canValidate = testStatus === 'success'
   // Allow import as long as at least one valid row exists — invalid rows will be skipped automatically
-  const canImport = validateStatus === 'success' && (validation?.validRows ?? 0) > 0
+  const canImport = validateStatus === 'success' && (validation?.totalRows ?? 0) > 0
 
   return (
     <div className="max-w-2xl space-y-8 animate-fade-up">
@@ -429,9 +429,7 @@ export default function SheetsImportPage() {
             >
               {importStatus === 'loading'
                 ? 'Importing…'
-                : validation && !validation.valid
-                  ? `Import ${validation.validRows} Valid Rows`
-                  : 'Import Now'
+                : 'Import Now'
               }
             </button>
           </div>

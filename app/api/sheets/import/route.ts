@@ -15,41 +15,25 @@ export async function POST() {
     // Read from Google Sheets
     const rows = await readConversations()
 
-    // Validate — collect which row indices (0-based) have errors
+    // Validate for informational warnings only — never blocks import
     const validation = validateConversations(rows)
-    const invalidRowIndices = new Set(
-      validation.errors.map((e) => e.row - 2) // row numbers are index+2
-    )
 
-    // Filter to only valid rows — skip rows with any error
-    const validRows = rows.filter((_, index) => !invalidRowIndices.has(index))
-    const skippedInvalid = rows.length - validRows.length
-
-    if (validRows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'No valid rows to import — all rows have errors. Fix the data in your sheet and try again.',
-          validation,
-        },
-        { status: 400 }
-      )
-    }
-
-    // Transform valid rows to DB format
-    const conversationsToInsert = validRows.map((row) => ({
-      freshchat_conversation_id: row.conversation_id,
-      customer_id: row.customer_id,
+    // Transform all rows to DB format, using nulls for any missing fields
+    const conversationsToInsert = rows.map((row) => ({
+      freshchat_conversation_id: row.conversation_id || null,
+      customer_id: row.customer_id || null,
       agent_id: row.agent_id || null,
-      conversation_start: new Date(row.start_time),
-      conversation_end: new Date(row.end_time),
+      conversation_start: row.start_time && !isNaN(Date.parse(row.start_time)) ? new Date(row.start_time) : null,
+      conversation_end: row.end_time && !isNaN(Date.parse(row.end_time)) ? new Date(row.end_time) : null,
       frt: row.first_response_time ?? null,
       aht: row.avg_handling_time ?? null,
       chatbot_handover: row.chatbot_handover ?? false,
       handover_reason: row.handover_reason || null,
-      status: row.status,
+      status: row.status || null,
       team_name: row.team_name || null,
     }))
+
+    const skippedInvalid = 0
 
     // Upsert — duplicates are updated, not duplicated
     const { data: inserted, error: insertError } = await supabase
@@ -65,7 +49,7 @@ export async function POST() {
     }
 
     const importedCount = inserted?.length ?? 0
-    const skippedDuplicate = validRows.length - importedCount
+    const skippedDuplicate = conversationsToInsert.length - importedCount
 
     // Log import
     await supabase.from('sync_logs').insert({
