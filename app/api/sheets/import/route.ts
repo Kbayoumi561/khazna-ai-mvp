@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { readConversations } from '@/lib/google-sheets'
-import { validateConversations } from '@/lib/validators/conversation-schema'
 
 export async function POST() {
   const supabase = createClient(
@@ -12,34 +11,35 @@ export async function POST() {
   try {
     const importStart = new Date()
 
-    // Read from Google Sheets
     const rows = await readConversations()
 
-    // Validate for informational warnings only — never blocks import
-    const validation = validateConversations(rows)
+    if (rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'No data found in sheet' }, { status: 400 })
+    }
 
-    // Transform all rows to DB format, using nulls for any missing fields
-    const conversationsToInsert = rows.map((row) => ({
-      freshchat_conversation_id: row.conversation_id || null,
-      customer_id: row.customer_id || null,
-      agent_id: row.agent_id || null,
-      conversation_start: row.start_time && !isNaN(Date.parse(row.start_time)) ? new Date(row.start_time) : null,
-      conversation_end: row.end_time && !isNaN(Date.parse(row.end_time)) ? new Date(row.end_time) : null,
-      frt: row.first_response_time ?? null,
-      aht: row.avg_handling_time ?? null,
-      chatbot_handover: row.chatbot_handover ?? false,
-      handover_reason: row.handover_reason || null,
-      status: row.status || null,
-      team_name: row.team_name || null,
-    }))
+    // Map sheet rows to actual DB column names
+    const conversationsToInsert = rows
+      .filter((row) => row.conversation_id?.trim())
+      .map((row) => ({
+        freshchat_id: row.conversation_id,
+        customer_name: row.customer_id || null,
+        agent_id: null, // sheet has string IDs; FK requires UUID — skip for now
+        team_id: null,  // sheet has team name; FK requires UUID — skip for now
+        conversation_date:
+          row.start_time && !isNaN(Date.parse(row.start_time))
+            ? new Date(row.start_time)
+            : new Date(),
+        frt_seconds: row.first_response_time != null ? Math.round(Number(row.first_response_time)) : null,
+        aht_seconds: row.avg_handling_time != null ? Math.round(Number(row.avg_handling_time)) : null,
+        status: row.status || null,
+      }))
 
-    const skippedInvalid = 0
+    const skippedCount = rows.length - conversationsToInsert.length
 
-    // Upsert — duplicates are updated, not duplicated
     const { data: inserted, error: insertError } = await supabase
       .from('conversations')
       .upsert(conversationsToInsert, {
-        onConflict: 'freshchat_conversation_id',
+        onConflict: 'freshchat_id',
         ignoreDuplicates: false,
       })
       .select('id')
@@ -49,22 +49,19 @@ export async function POST() {
     }
 
     const importedCount = inserted?.length ?? 0
-    const skippedDuplicate = conversationsToInsert.length - importedCount
 
-    // Log import
+    // Log import using actual sync_logs columns
     await supabase.from('sync_logs').insert({
-      sync_start: importStart,
-      sync_end: new Date(),
-      sync_status: 'completed',
-      total_conversations: rows.length,
-      failed_conversations: skippedInvalid,
+      date_start: importStart.toISOString().split('T')[0],
+      date_end: new Date().toISOString().split('T')[0],
+      status: 'completed',
+      total_synced: importedCount,
     })
 
     return NextResponse.json({
       success: true,
       imported: importedCount,
-      skippedInvalid,
-      skippedDuplicate,
+      skipped: skippedCount,
       total: rows.length,
     })
   } catch (error) {

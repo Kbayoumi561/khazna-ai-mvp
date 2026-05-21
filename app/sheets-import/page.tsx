@@ -26,8 +26,7 @@ interface ValidationResult {
 interface ImportResult {
   success: boolean
   imported: number
-  skippedInvalid: number
-  skippedDuplicate: number
+  skipped: number
   total: number
   error?: string
 }
@@ -184,7 +183,7 @@ export default function SheetsImportPage() {
       setImportResult(data)
       setImportStatus(data.success ? 'success' : 'error')
     } catch {
-      setImportResult({ success: false, imported: 0, skippedInvalid: 0, skippedDuplicate: 0, total: 0, error: 'Network error' })
+      setImportResult({ success: false, imported: 0, skipped: 0, total: 0, error: 'Network error' })
       setImportStatus('error')
     }
   }
@@ -449,11 +448,10 @@ export default function SheetsImportPage() {
                       Import complete
                     </span>
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     {[
                       { label: 'Imported', value: importResult.imported, icon: BarChart2, color: 'hsl(158, 64%, 48%)' },
-                      { label: 'Skipped (errors)', value: importResult.skippedInvalid, icon: XCircle, color: 'hsl(0, 78%, 62%)' },
-                      { label: 'Skipped (dupes)', value: importResult.skippedDuplicate, icon: SkipForward, color: 'hsl(38, 90%, 54%)' },
+                      { label: 'Skipped', value: importResult.skipped, icon: SkipForward, color: 'hsl(38, 90%, 54%)' },
                       { label: 'Total', value: importResult.total, icon: FileSpreadsheet, color: 'hsl(215, 12%, 65%)' },
                     ].map(({ label, value, icon: Icon, color }) => (
                       <div key={label} className="rounded px-3 py-2.5" style={{ background: 'hsl(158, 64%, 48%, 0.06)' }}>
